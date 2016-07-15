@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Responsive UI</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.0/esri/css/main.css">
+  <style>
+    html,
+    body {
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      background-color: #f3f;
+    }
+
+    #viewContainer {
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+    }
+
+    #viewDiv {
+      padding: 0;
+      height: 100%;
+      width: 50%;
+      margin: 0;
+    }
+    #vidCam {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 50%;
+      background-color: #666;
+    }
+  </style>
+  <script src="https://js.arcgis.com/4.0/"></script>
+</head>
+
+<body>
+  <div id="viewContainer">
+    <div id="viewDiv" ></div>
+    <video autoplay="true" id="vidCam"></video>
+  </div>
+  <script>
+require([
+  "esri/Map",
+  "esri/views/SceneView",
+  "esri/widgets/Track/TrackViewModel",
+  "dojo/domReady!"
+], function (
+  Map,
+  SceneView,
+  TrackViewModel
+  ) {
+    var map = new Map({
+      basemap: "streets"
+    });
+
+    var view = new SceneView({
+      center: [-118.170, 34.025],
+      zoom: 12,
+      container: "viewDiv",
+      map: map,
+      ui: {
+        components: ["zoom", "compass", "attribution"]
+      }
+    });
+
+    // so so hacky, just testing and playing
+    view.then(function() {
+      var video = document.querySelector("#vidCam");
+      
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+      
+      if (navigator.getUserMedia) {       
+        navigator.getUserMedia({video: true}, handleVideo, videoError);
+      }
+      
+      function handleVideo(stream) {
+        video.src = window.URL.createObjectURL(stream);
+      }
+      function videoError(event) {
+        console.log("Nope nope nope", event);
+      }
+
+      var vm = new TrackViewModel({ view: view });
+      vm.start();
+      vm.on("track", function(e) {
+        if (window.DeviceOrientationEvent) {
+          window.addEventListener("deviceorientation", function(event) {
+            var xValue = Math.round(event.gamma);
+            var yValue = Math.round(event.beta);
+            var rotation = Math.round(event.alpha);
+            var cam = view.camera.clone();
+            cam.heading = xValue;
+            cam.tilt = yValue;
+            view.camera = cam;
+          }, true);
+        }
+        else {
+          alert("Sorry, your browser doesn't support Device Orientation");
+        }
+      });
+    });
+  });
+  </script>
+</body>
+
+</html>
