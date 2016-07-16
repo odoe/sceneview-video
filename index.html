@@ -26,7 +26,7 @@
     #viewDiv {
       padding: 0;
       height: 100%;
-      width: 50%;
+      width: 100%;
       margin: 0;
     }
     #vidCam {
@@ -43,7 +43,6 @@
 <body>
   <div id="viewContainer">
     <div id="viewDiv" ></div>
-    <video autoplay="true" id="vidCam"></video>
   </div>
   <script>
 require([
@@ -72,41 +71,32 @@ require([
 
     // so so hacky, just testing and playing
     view.then(function() {
-      var video = document.querySelector("#vidCam");
-      
-      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
-      
-      if (navigator.getUserMedia) {       
-        navigator.getUserMedia({ audio: false, video: { facingMode: { exact: "environment" } } }, handleVideo, videoError);
-      }
-      
-      function handleVideo(stream) {
-        video.src = window.URL.createObjectURL(stream);
-      }
-      function videoError(event) {
-        console.log("Nope nope nope", event);
-      }
-
       var vm = new TrackViewModel({ view: view });
       vm.start();
-      vm.on("track", function(e) {
-        if (window.DeviceOrientationEvent) {
-          window.addEventListener("deviceorientation", function(event) {
-            var xValue = Math.round(event.gamma);
-            var yValue = Math.round(event.beta);
-            var rotation = Math.round(event.alpha);
-            var cam = view.camera.clone();
-            cam.heading = xValue;
-            cam.tilt = yValue;
-            view.camera = cam;
-          }, true);
-        }
-        else {
-          alert("Sorry, your browser doesn't support Device Orientation");
+      vm.on("track", function(event) {
+        console.log(event);
+        if (event.position.coords.heading) {
+          var trackedCam = view.camera.clone();
+          trackedCam.heading = event.position.coords.heading;
+          view.camera = trackedCam;
         }
       });
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener("deviceorientation", function(event) {
+          var xValue = Math.round(event.gamma);
+          var yValue = Math.round(event.beta);
+          var rotation = Math.round(event.alpha);
+          var cam = view.camera.clone();
+          cam.heading = xValue;
+          cam.tilt = yValue;
+          view.camera = cam;
+        }, true);
+      }
+      else {
+        alert("Sorry, your browser doesn't support Device Orientation");
+      }
     });
-  });
+});
   </script>
 </body>
 
